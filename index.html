@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YUCIREN 團購點餐</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f3ef; color: #1a1a18; }
+.app { max-width: 680px; margin: 0 auto; padding: 1rem; }
+.header { margin-bottom: 1.5rem; padding-top: 0.5rem; }
+.header h1 { font-size: 22px; font-weight: 600; }
+.header p { font-size: 13px; color: #888; margin-top: 4px; }
+.tab-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #e0ddd6; }
+.tab { padding: 8px 18px; border: none; background: none; cursor: pointer; font-size: 14px; color: #888; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 500; }
+.menu-section { margin-bottom: 1.5rem; }
+.menu-section-label { font-size: 12px; font-weight: 600; color: #aaa; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.menu-item { background: #fff; border: 1px solid #e8e5de; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; }
+.menu-item:hover { border-color: #bbb; }
+.menu-item.selected { border-color: #2563eb; background: #eff6ff; }
+.item-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.item-name { font-size: 15px; font-weight: 500; }
+.item-name-en { font-size: 12px; color: #aaa; margin-top: 2px; }
+.item-price { font-size: 15px; font-weight: 500; color: #2563eb; white-space: nowrap; margin-left: 12px; }
+.tag-seasonal { font-size: 11px; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+.item-options { margin-top: 10px; display: none; }
+.menu-item.selected .item-options { display: block; }
+.options-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+.opt-label { font-size: 12px; color: #888; min-width: 40px; }
+.opt-btn { border: 1px solid #ddd; background: #f8f7f4; color: #333; font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: all 0.1s; }
+.opt-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.qty-control { display: flex; align-items: center; gap: 8px; }
+.qty-btn { width: 28px; height: 28px; border: 1px solid #ddd; background: #f8f7f4; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.qty-val { font-size: 15px; font-weight: 500; min-width: 20px; text-align: center; }
+.name-section { background: #fff; border: 1px solid #e8e5de; border-radius: 12px; padding: 14px; margin-bottom: 1rem; }
+.field-label { font-size: 13px; color: #666; margin-bottom: 6px; }
+.text-input { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #fafafa; }
+.text-input:focus { outline: none; border-color: #2563eb; }
+.cart-summary { background: #fff; border: 1px solid #e8e5de; border-radius: 12px; padding: 14px; margin-bottom: 1rem; }
+.cart-item { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: #666; }
+.cart-item strong { color: #1a1a18; }
+.cart-total-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 500; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e5de; }
+.submit-btn { width: 100%; padding: 13px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; }
+.submit-btn:hover { background: #1d4ed8; }
+.submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.success-msg { text-align: center; padding: 3rem 1rem; }
+.success-icon { font-size: 3rem; margin-bottom: 12px; }
+.reset-btn { margin-top: 1rem; padding: 8px 20px; background: none; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-size: 13px; color: #666; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.stat-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; border: 1px solid #e8e5de; }
+.stat-num { font-size: 24px; font-weight: 600; }
+.stat-label { font-size: 12px; color: #888; margin-top: 2px; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.top-bar h2 { font-size: 16px; font-weight: 500; }
+.btn-refresh { font-size: 13px; color: #2563eb; background: none; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
+.btn-clear { font-size: 13px; color: #dc2626; background: none; border: 1px solid #fecaca; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+.agg-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1.5rem; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e5de; }
+.agg-table th { text-align: left; color: #888; font-weight: 500; padding: 10px 12px; background: #f8f7f4; border-bottom: 1px solid #e8e5de; }
+.agg-table td { padding: 8px 12px; color: #666; border-bottom: 1px solid #f0ede6; }
+.agg-table td:first-child { color: #1a1a18; font-weight: 500; }
+.agg-table td:last-child { color: #2563eb; font-weight: 500; }
+.order-card { background: #fff; border: 1px solid #e8e5de; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.order-name { display: flex; justify-content: space-between; font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.order-time { font-size: 11px; color: #aaa; font-weight: 400; }
+.order-line { font-size: 13px; color: #666; padding: 2px 0; }
+.order-total { margin-top: 8px; font-size: 13px; font-weight: 500; color: #2563eb; }
+.empty-state { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+.section-heading { font-size: 14px; font-weight: 500; color: #666; margin-bottom: 8px; }
+.loading { text-align: center; padding: 2rem; color: #aaa; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🧇 YUCIREN 團購點餐</h1>
+    <p>Happy Waffle & Cafe 雞蛋糕</p>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('order')">點餐</button>
+    <button class="tab" onclick="switchTab('admin')">匯總管理</button>
+  </div>
+
+  <!-- 點餐頁 -->
+  <div id="tab-order">
+    <div id="order-form">
+      <div class="name-section">
+        <div class="field-label">你的名字</div>
+        <input class="text-input" id="orderer-name" type="text" placeholder="例如：小明、王大明" />
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-section-label">雞蛋糕 6入 / NT$</div>
+        <div id="items-6"></div>
+      </div>
+      <div class="menu-section">
+        <div class="menu-section-label">雞蛋糕 5入 / NT$</div>
+        <div id="items-5"></div>
+      </div>
+      <div class="menu-section">
+        <div class="menu-section-label">飲品</div>
+        <div id="items-drink"></div>
+      </div>
+      <div class="menu-section">
+        <div class="menu-section-label">咖啡</div>
+        <div id="items-coffee"></div>
+      </div>
+
+      <div class="cart-summary" id="cart-summary" style="display:none">
+        <div class="section-heading">訂購明細</div>
+        <div id="cart-lines"></div>
+        <div class="cart-total-row">
+          <span>合計</span>
+          <span id="cart-total" style="color:#2563eb">NT$0</span>
+        </div>
+        <div style="margin-top:8px">
+          <textarea class="text-input" id="order-note" placeholder="備註（例如：不要太甜...）" rows="2" style="resize:none"></textarea>
+        </div>
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="submitOrder()">送出訂單</button>
+    </div>
+    <div id="order-success" style="display:none" class="success-msg">
+      <div class="success-icon">✅</div>
+      <div style="font-size:17px;font-weight:500;margin-bottom:4px">訂單已送出！</div>
+      <div style="font-size:13px;color:#888">感謝你的點餐，等待確認中</div>
+      <button class="reset-btn" onclick="resetOrder()">再點一份</button>
+    </div>
+  </div>
+
+  <!-- 管理頁 -->
+  <div id="tab-admin" style="display:none">
+    <div class="top-bar">
+      <h2>訂單匯總</h2>
+      <div>
+        <button class="btn-refresh" onclick="loadAdmin()">↻ 刷新</button>
+        <button class="btn-clear" onclick="clearOrders()">✕ 清除</button>
+      </div>
+    </div>
+    <div id="admin-content"><div class="loading">載入中...</div></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbwG-swaMzKJ7pcN9RWpcC2_1W_bDKe3ribfmjAlnGGvmc0FRClGPsuEy9P6Xz8bwrQH7A/exec';
+
+const MENU = {
+  waffle6: [
+    { id:'w6-1', name:'冰淇淋榛果巧克力', en:'Valrhona Chocolate with Ice Cream', price:180 },
+    { id:'w6-2', name:'冰淇淋香蕉卡士達', en:'Banana Custard with Ice Cream', price:180 },
+    { id:'w6-3', name:'阿薩姆提拉米蘇', en:'Yuchi Assam Tiramisu', price:140, seasonal:'冬季限定' },
+    { id:'w6-4', name:'焦糖蘋果肉桂', en:'Apple Cinnamon Sauce with Caramel', price:120 },
+    { id:'w6-5', name:'鹹鴨蛋黃流沙餡', en:'Salted Egg Yolk Creamy Custard', price:120 },
+    { id:'w6-6', name:'海苔肉鬆卡士達', en:'Seaweed Pork Floss Custard', price:140 },
+    { id:'w6-7', name:'桂花紅烏龍', en:'Osmanthus Red Oolong', price:140, seasonal:'夏季限定' },
+  ],
+  waffle5: [
+    { id:'w5-1', name:'鐵觀音卡士達', en:'Tie Guan Yin Custard', price:80, seasonal:'大稻埕限定' },
+    { id:'w5-2', name:'小山園抹茶', en:'Koyamaen Matcha', price:80 },
+    { id:'w5-3', name:'經典原味', en:'Original', price:50 },
+    { id:'w5-4', name:'乳酪起司', en:'Cheese', price:80 },
+    { id:'w5-5', name:'牛奶卡士達', en:'Custard', price:65 },
+    { id:'w5-6', name:'阿薩姆卡士達', en:'Assam Custard', price:65 },
+    { id:'w5-7', name:'魚池阿薩姆', en:'Yuchi Assam Tea', price:55 },
+  ],
+  drink: [
+    { id:'d-1', name:'魚池紅茶', en:'Yuchi Black Tea', priceHot:60, priceIced:60 },
+    { id:'d-2', name:'魚池紅茶拿鐵', en:'Yuchi Black Milk Tea', priceHot:80, priceIced:80 },
+    { id:'d-3', name:'伯爵紅茶拿鐵', en:'Earl Grey Milk Tea', priceHot:null, priceIced:80 },
+    { id:'d-4', name:'熱巧克力牛奶', en:'Hot Cocoa', priceHot:80, priceIced:null },
+    { id:'d-5', name:'100%蘋果汁', en:'100% Apple Juice', priceHot:null, priceIced:100 },
+    { id:'d-6', name:'有機鹹檸檬雪碧', en:'Organic Salty Lemon Sprite', priceHot:null, priceIced:80 },
+    { id:'d-7', name:'有機鹹檸檬可樂', en:'Organic Salty Lemon Coke', priceHot:null, priceIced:80 },
+  ],
+  coffee: [
+    { id:'c-1', name:'巷弄黑咖啡', en:'Black Coffee', priceHot:70, priceIced:70 },
+    { id:'c-2', name:'舊時光拿鐵', en:'Latte', priceHot:80, priceIced:80 },
+    { id:'c-3', name:'焦糖拿鐵', en:'Caramel Latte', priceHot:95, priceIced:95 },
+    { id:'c-4', name:'黑糖拿鐵', en:'Brown Sugar Latte', priceHot:95, priceIced:null },
+  ]
+};
+
+const SWEETNESS = ['正常糖','少糖','半糖','微糖','無糖'];
+const ICE_OPTIONS = ['正常冰','少冰','去冰'];
+let selections = {};
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['order','admin'][i]===t));
+  document.getElementById('tab-order').style.display = t==='order'?'block':'none';
+  document.getElementById('tab-admin').style.display = t==='admin'?'block':'none';
+  if (t==='admin') loadAdmin();
+}
+
+function findItem(id) {
+  for (const g of Object.values(MENU)) for (const item of g) if (item.id===id) return item;
+  return null;
+}
+
+function renderWaffleItem(item) {
+  const sel = selections[item.id] || {};
+  const qty = sel.qty || 1;
+  return `<div class="menu-item${sel.selected?' selected':''}" onclick="toggleItem('${item.id}','waffle')" id="card-${item.id}">
+    <div class="item-header">
+      <div>
+        <div class="item-name">${item.name}${item.seasonal?`<span class="tag-seasonal">${item.seasonal}</span>`:''}</div>
+        <div class="item-name-en">${item.en}</div>
+      </div>
+      <div class="item-price">NT$${item.price}</div>
+    </div>
+    <div class="item-options">
+      <div class="options-row">
+        <span class="opt-label">數量</span>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="event.stopPropagation();changeQty('${item.id}',-1)">−</button>
+          <span class="qty-val" id="qty-${item.id}">${qty}</span>
+          <button class="qty-btn" onclick="event.stopPropagation();changeQty('${item.id}',1)">+</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderBevItem(item) {
+  const sel = selections[item.id] || {};
+  const qty = sel.qty || 1;
+  const temp = sel.temp || (item.priceHot?'熱':'冰');
+  const sweet = sel.sweet || '正常糖';
+  const ice = sel.ice || '正常冰';
+  const priceStr = item.priceHot && item.priceIced ? `熱 NT$${item.priceHot} / 冰 NT$${item.priceIced}` : item.priceHot ? `熱 NT$${item.priceHot}` : `冰 NT$${item.priceIced}`;
+  return `<div class="menu-item${sel.selected?' selected':''}" onclick="toggleItem('${item.id}','bev')" id="card-${item.id}">
+    <div class="item-header">
+      <div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-name-en">${item.en}</div>
+      </div>
+      <div class="item-price" style="font-size:13px">${priceStr}</div>
+    </div>
+    <div class="item-options" onclick="event.stopPropagation()">
+      <div class="options-row">
+        <span class="opt-label">溫度</span>
+        ${item.priceHot?`<button class="opt-btn${temp==='熱'?' active':''}" onclick="setBevOpt('${item.id}','temp','熱')">熱</button>`:''}
+        ${item.priceIced?`<button class="opt-btn${temp==='冰'?' active':''}" onclick="setBevOpt('${item.id}','temp','冰')">冰</button>`:''}
+      </div>
+      ${temp==='冰'?`<div class="options-row"><span class="opt-label">冰量</span>${ICE_OPTIONS.map(o=>`<button class="opt-btn${ice===o?' active':''}" onclick="setBevOpt('${item.id}','ice','${o}')">${o}</button>`).join('')}</div>`:''}
+      <div class="options-row">
+        <span class="opt-label">甜度</span>
+        ${SWEETNESS.map(s=>`<button class="opt-btn${sweet===s?' active':''}" onclick="setBevOpt('${item.id}','sweet','${s}')">${s}</button>`).join('')}
+      </div>
+      <div class="options-row">
+        <span class="opt-label">數量</span>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty('${item.id}',-1)">−</button>
+          <span class="qty-val" id="qty-${item.id}">${qty}</span>
+          <button class="qty-btn" onclick="changeQty('${item.id}',1)">+</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleItem(id, type) {
+  if (!selections[id]) selections[id] = {};
+  const s = selections[id];
+  s.selected = !s.selected;
+  s.qty = s.qty || 1;
+  s.type = type;
+  if (type==='bev' && !s.temp) {
+    const item = findItem(id);
+    s.temp = item.priceHot ? '熱' : '冰';
+    s.sweet = '正常糖';
+    s.ice = '正常冰';
+  }
+  renderAll(); updateCart();
+}
+
+function setBevOpt(id, key, val) {
+  if (!selections[id]) selections[id] = {};
+  selections[id][key] = val;
+  renderAll(); updateCart();
+}
+
+function changeQty(id, delta) {
+  if (!selections[id]) return;
+  selections[id].qty = Math.max(1, (selections[id].qty||1) + delta);
+  const el = document.getElementById('qty-'+id);
+  if (el) el.textContent = selections[id].qty;
+  updateCart();
+}
+
+function renderAll() {
+  document.getElementById('items-6').innerHTML = MENU.waffle6.map(renderWaffleItem).join('');
+  document.getElementById('items-5').innerHTML = MENU.waffle5.map(renderWaffleItem).join('');
+  document.getElementById('items-drink').innerHTML = MENU.drink.map(renderBevItem).join('');
+  document.getElementById('items-coffee').innerHTML = MENU.coffee.map(renderBevItem).join('');
+}
+
+function getCartLines() {
+  const lines = [];
+  for (const [id, sel] of Object.entries(selections)) {
+    if (!sel.selected) continue;
+    const item = findItem(id);
+    if (!item) continue;
+    const qty = sel.qty || 1;
+    const price = item.price || (sel.temp==='熱' ? item.priceHot : item.priceIced) || 0;
+    let spec = '';
+    if (sel.type==='bev') spec = [sel.temp, sel.temp==='冰'?sel.ice:'', sel.sweet].filter(Boolean).join(' ');
+    lines.push({ name: item.name, spec, qty, price, subtotal: price*qty });
+  }
+  return lines;
+}
+
+function updateCart() {
+  const lines = getCartLines();
+  const cartEl = document.getElementById('cart-summary');
+  if (lines.length === 0) { cartEl.style.display='none'; return; }
+  cartEl.style.display = 'block';
+  document.getElementById('cart-lines').innerHTML = lines.map(l=>`<div class="cart-item"><span><strong>${l.name}</strong>${l.spec?' ('+l.spec+')':''} × ${l.qty}</span><span>NT$${l.subtotal}</span></div>`).join('');
+  document.getElementById('cart-total').textContent = 'NT$' + lines.reduce((s,l)=>s+l.subtotal,0);
+}
+
+async function submitOrder() {
+  const name = document.getElementById('orderer-name').value.trim();
+  if (!name) { alert('請輸入你的名字'); return; }
+  const lines = getCartLines();
+  if (lines.length === 0) { alert('請至少選一樣商品'); return; }
+  const note = document.getElementById('order-note').value.trim();
+  const total = lines.reduce((s,l)=>s+l.subtotal,0);
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '送出中...';
+  try {
+    await fetch(API, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, lines, total, note })
+    });
+    document.getElementById('order-form').style.display = 'none';
+    document.getElementById('order-success').style.display = 'block';
+  } catch(e) {
+    alert('送出失敗，請重試');
+    btn.disabled = false; btn.textContent = '送出訂單';
+  }
+}
+
+function resetOrder() {
+  selections = {};
+  document.getElementById('orderer-name').value = '';
+  document.getElementById('order-note').value = '';
+  document.getElementById('order-form').style.display = 'block';
+  document.getElementById('order-success').style.display = 'none';
+  renderAll(); updateCart();
+}
+
+async function loadAdmin() {
+  document.getElementById('admin-content').innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const res = await fetch(API + '?t=' + Date.now());
+    const rows = await res.json();
+    renderAdmin(rows);
+  } catch(e) {
+    document.getElementById('admin-content').innerHTML = '<div class="empty-state">載入失敗，請重試</div>';
+  }
+}
+
+function renderAdmin(rows) {
+  if (!rows || rows.length <= 1) {
+    document.getElementById('admin-content').innerHTML = '<div class="empty-state">📋 尚無訂單資料</div>';
+    return;
+  }
+  const data = rows.slice(1);
+  const orders = [];
+  let cur = null;
+  for (const r of data) {
+    if (r[1]) { cur = { name: r[1], time: r[0], lines: [], total: r[7], note: r[6] }; orders.push(cur); }
+    if (cur) cur.lines.push({ name: r[2], spec: r[3], qty: r[4], subtotal: r[5] });
+  }
+  const totalPeople = orders.length;
+  const totalItems = orders.reduce((s,o)=>s+o.lines.reduce((a,l)=>a+Number(l.qty),0),0);
+  const totalAmt = orders.reduce((s,o)=>s+Number(o.total),0);
+
+  const aggMap = {};
+  for (const o of orders) for (const l of o.lines) {
+    const key = l.name + (l.spec?' ('+l.spec+')':'');
+    if (!aggMap[key]) aggMap[key] = { spec: l.spec, qty: 0, subtotal: 0 };
+    aggMap[key].qty += Number(l.qty);
+    aggMap[key].subtotal += Number(l.subtotal);
+  }
+
+  document.getElementById('admin-content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${totalPeople}</div><div class="stat-label">訂單數</div></div>
+      <div class="stat-card"><div class="stat-num">${totalItems}</div><div class="stat-label">總品項數</div></div>
+      <div class="stat-card"><div class="stat-num">NT$${totalAmt}</div><div class="stat-label">總金額</div></div>
+    </div>
+    <div class="section-heading" style="margin-bottom:8px">品項匯總</div>
+    <table class="agg-table">
+      <thead><tr><th>品項</th><th>規格</th><th>數量</th><th>小計</th></tr></thead>
+      <tbody>${Object.entries(aggMap).sort((a,b)=>b[1].qty-a[1].qty).map(([name,d])=>`<tr><td>${name.replace(/ \(.*\)/,'')}</td><td style="color:#aaa">${d.spec||'—'}</td><td>${d.qty}</td><td>NT$${d.subtotal}</td></tr>`).join('')}</tbody>
+    </table>
+    <div class="section-heading" style="margin-bottom:8px">個人訂單</div>
+    ${orders.slice().reverse().map(o=>`<div class="order-card">
+      <div class="order-name"><span>${o.name}</span><span class="order-time">${o.time}</span></div>
+      ${o.lines.map(l=>`<div class="order-line">• ${l.name}${l.spec?' ('+l.spec+')':''} × ${l.qty} — NT$${l.subtotal}</div>`).join('')}
+      ${o.note?`<div style="font-size:12px;color:#aaa;margin-top:4px">備註：${o.note}</div>`:''}
+      <div class="order-total">合計 NT$${o.total}</div>
+    </div>`).join('')}
+  `;
+}
+
+async function clearOrders() {
+  if (!confirm('確定要清除所有訂單？\n（Google 試算表的資料也會被清空）')) return;
+  try {
+    await fetch(API + '?clear=1&t=' + Date.now());
+    loadAdmin();
+  } catch(e) { alert('清除失敗'); }
+}
+
+renderAll();
+</script>
+</body>
+</html>
